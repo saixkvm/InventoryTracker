@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import { Box, Typography, Modal, Stack, TextField, Button} from '@mui/material'
 import { firestore } from '../firebase'
 import { query, collection, getDocs, doc, deleteDoc, setDoc, getDoc } from 'firebase/firestore'
+import { Inter } from 'next/font/google'
+ 
+// If loading a variable font, you don't need to specify the font weight
+const inter = Inter({ subsets: ['latin'] })
 
 
 const Home = () => {
@@ -12,6 +16,8 @@ const Home = () => {
   const [inventory, setInventory] = useState([])
   const [open, setOpen] = useState(false)
   const [itemname, setItemname] = useState('')
+  const [sitem, setsitem] = useState(null)
+  const [searchResults, setSearchResults] = useState(null)
 
   const updateInventory = async() => {
     const snapshot = query(collection(firestore,'inventory'))
@@ -60,6 +66,19 @@ const Home = () => {
 
     await updateInventory();
   }
+  const handleSearch = async(item) => {
+    const docRef = doc(collection(firestore, 'inventory'), item)
+    const docSnap = await getDoc(docRef)
+
+    if (docSnap.exists()){
+      const {count} = docSnap.data();
+      setSearchResults({item, count})
+    }
+    else{
+      setSearchResults(null)
+    }
+
+  }
 
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
@@ -77,7 +96,8 @@ const Home = () => {
       justifyContent="center" 
       flexDirection="column"
       alignItems = "center" 
-      gap = {2}>
+      gap = {2}
+      >
       
       <Modal 
         open = {open}
@@ -117,33 +137,67 @@ const Home = () => {
 
             </Stack>
           </Box>
-        </Modal>
+      </Modal>
 
+    <Box 
+    width = "800px" 
+    height = "100px" 
+    // bgcolor = "#ADD8E6"
+    display = "flex"
+    alignItems= "center"
+    justifyContent="center"
+    >
 
-    <Button 
-        variant = "contained"
-        onClick = {() => {
-          handleOpen()
-        }}>
-        Add New Item
+    <Typography 
+    variant='h2' 
+    color = "#333"
+    className = {inter.className}>
+      Inventory Items
+    </Typography>
+    </Box>
+
+    <Stack
+    width="60%"
+    direction="row"
+    spacing={2}
+    display="flex"
+    alignItems="center"
+    justifyContent="center"
+  >
+    <TextField
+      variant='outlined'
+      fullWidth
+      value={sitem}
+      onChange={(e) => {
+        setsitem(e.target.value)
+      }}
+    />
+    <Button variant="outlined" 
+            onClick= {() => {
+              handleSearch(sitem)
+              setsitem('')
+            }
+            }>
+      Search
     </Button>
+  </Stack>
+
+  {searchResults && 
+    (
+    <Box mt={2}>
+      {
+        (
+        <>
+          <Stack direction="row" spacing={2}>
+            <Typography className = {inter.className}>Item: {searchResults.item}</Typography>
+            <Typography className = {inter.className}>Count: {searchResults.count}</Typography>
+          </Stack>
+        </>
+      )}
+    </Box>
+  )}
       
     <Box border = "1px solid #333">
-        <Box 
-        width = "800px" 
-        height = "100px" 
-        bgcolor = "#ADD8E6"
-        display = "flex"
-        alignItems= "center"
-        justifyContent="center"
-        >
-        
-          <Typography 
-            variant='h2' 
-            color = "#333">
-              Inventory Items
-          </Typography>
-        </Box>
     
 
     <Stack 
@@ -164,8 +218,8 @@ const Home = () => {
               padding={5}
               >
               
-              <Typography variant = "h3"color = "#333" textAlign="center">{name}</Typography>
-              <Typography variant = "h3" color = "#333">{count}</Typography>
+              <Typography variant = "h4"color = "#333" textAlign="center" className = {inter.className}>{name}</Typography>
+              <Typography variant = "h4" color = "#333" className = {inter.className}>{count}</Typography>
 
 
               <Box display = "flex" sx={{ gap: 2 }}>
@@ -177,9 +231,17 @@ const Home = () => {
             
             
           ))}
-      </Stack>
+    </Stack>
 
-      </Box>
+    </Box>
+
+    <Button 
+      variant = "contained"
+      onClick = {() => {
+        handleOpen()
+      }}>
+      Add New Item
+      </Button>
     
     </Box>
   )
